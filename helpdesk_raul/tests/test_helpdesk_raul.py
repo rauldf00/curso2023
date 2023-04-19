@@ -28,13 +28,17 @@ class TestHelpdeskRaul(common.TransactionCase):
 
 
     def test_01_ticket(self):                               #Cada metodo es un test, con su rollback correspondiente (Ya que es TransactionCase)
-        # """Test 01:                   En versiones anteriores se podia poner eso para que saliese en la terminal al correr el test
+        # ""Test 01:                   En versiones anteriores se podia poner eso para que saliese en la terminal al correr el test (Se puede meter con un print igualmente)
         # Checking ticket name"""
+        print("""TEST 01:
+        Checking ticket name""")
         self.assertEqual(self.ticket.name, "Test ticket")
 
     def test_02_ticket(self):
         # """Test 02:
-        # Checking ticket user and set it"""    
+        # Checking ticket user and set it""" 
+        print("""TEST 02:
+        Checking ticket user and set it""")   
         self.assertEqual(self.ticket.user_id, self.env['res.users'])
         self.ticket.user_id = self.user_id
         self.assertEqual(self.ticket.user_id.id, self.user_id)
@@ -42,11 +46,15 @@ class TestHelpdeskRaul(common.TransactionCase):
     def test_03_ticket(self):
         # """Test 03:
         # Checking ticket name is not equal"""
+        print("""TEST 01:
+        Checking ticket name is not equal""")
         self.assertFalse(self.ticket.name == "Test tickedsfgt")
 
     def test_04_ticket(self):
         # """Test 04:
         # Checking time exception"""
+        print("""TEST 04:
+        Checking time exception""")
         self.ticket.time = 4
         self.assertEqual(self.ticket.time, 4)       #Ponemos valores de prueba para comprobar
         self.ticket.time = 12
