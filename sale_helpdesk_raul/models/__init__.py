@@ -1,0 +1,1 @@
+from . import sale_order, helpdesk_ticket, product_product

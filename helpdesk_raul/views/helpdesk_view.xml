@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!--VISTA TREE-->
+    <record id="view_helpdesk_ticket_tree" model="ir.ui.view"> 
+        <field name="name">view.helpdesk_ticket.tree</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="arch" type="xml">
+            <tree string="Ticket">
+                <field name="name" />
+                <field name="date" />
+                <field name="state" />
+            </tree>
+        </field>        
+    </record>
+
+    <!-- En la vista de formulario
+    dos columnas:
+    fecha, fecha limite
+    asignado, tiempo dedicado
+    solapas:
+    Descripcion
+    Calidad
+    Accion correctiva
+    Accion preventiva-->
+
+    <!--VISTA FORM-->
+    <record id="view_helpdesk_ticket_form" model="ir.ui.view"> 
+        <field name="name">view.helpdesk_ticket.form</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="arch" type="xml">
+            <form string="Ticket">
+                <header>       
+                    <!-- Asignar, cambia estado a asignado y pone a true el campo asignado, visible sólo con estado = nuevo -->
+                    <button string="Asignar" name="asignar" type="object" states="nuevo" /> <!--Al ser type="object" el name es el nombre del metodo-->
+                    <!-- En proceso, visible solo con estado = asignado -->
+                    <button string="En proceso" name="proceso" type="object" states="asignado" />
+                    <!-- Pendiente, visible solo con estado = en proceso o asignado -->
+                    <button string="Pendiente" name="pendiente" type="object" states="proceso,asignado" />
+                    <!-- Finalizar visible en cualquier estado, menos cancelado y finalizado -->
+                    <button string="Finalizar" name="finalizar" type="object" states="nuevo,asignado,proceso,pendiente" />
+                    <!-- Cancelar, visibible si no esta cancelado -->
+                    <button string="Cancelar" name="cancelar" type="object" states="nuevo,asignado,proceso,pendiente,finalizado" />
+                    
+                    <field name="state" widget="statusbar" /> <!--Al tener un campo llamado STATE, podemos usar el states="" para poner condiciones de los botones-->
+
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>                                 <!--EJEMPLO DE CONTEXT-->
+                            <field name="partner_id" context="{'default_is_company': False, 'default_user_id': user_id}" domain="[('is_company', '=', False)]"/>        
+                            
+                            <field name="date" />
+                            <field name="date_limit" />
+                        </group>
+
+                        <group>
+                            <field name="user_id" options="{'no_create': True, 'no_open': True }"/> <!--OPCIONES MANY2ONE, por defecto te deja hacerlo todo, pero estas opciones lo restringen-->
+                            <field name="assigned" />                                               <!--no_create, no_open, no_quick_create-->
+                            <field name="ticket_qty"/>
+                            <field name="time" widget="float_time"/>
+                            
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description">
+                            <field name="description" />
+                            <group>  
+                                <field name="tag_name" />
+                                <button string="Create tag"
+                                name="create_tag"
+                                type="object"/>         
+                            </group>
+                            <field name="tag_ids" context="{'form_view_ref':'helpdesk_raul.view_helpdesk_ticket_tag_simple_form'}"
+                                                  domain="[('public', '=', True)]"/>    <!--EL CONTEXT ES PARA QUE PRIORICE UNA FORM SI HAY VARIAS-->
+                                                                                        <!--EL DOMAIN ES PARA VER SOLO LAS QUE CUMPLAN LA CONDICION-->
+                        </page>
+                        <page string="Actions">
+                            
+                            <field name="action_ids" context="{'default_date':date}"> <!--CONTEXT PARA ONE2MANY-->
+                                <tree editable="bottom">        <!--VISTAS EMBEBIDAS-->
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="time" />
+                                </tree>
+                                <form editable="bottom">
+                                    <group name="action">
+                                        <field name="name"/>
+                                        <field name="date"/>
+                                        <field name="time" />
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+
+
+
+                        <page string="Quality">
+                            <group>
+                                <field name="action_corrective" />  <!--Pone label al lado-->
+                            </group>                                <!--Tambien se podria poner sin grupo y con un label for="action_corrective", el cual pone la label ARRIBA-->
+                            <group string="Preventive Action">      <!--Pone TITULO-->
+                                <field name="action_preventive" nolabel="1" />
+                            </group>
+                            
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" />               <!--MIXIN EN LA VISTA (Para que salga abajo del todo del form)-->
+                    <field name="activity_ids" />
+                    <field name="message_ids" options="{'post_refresh': 'recipients'}" />
+                </div>
+            </form>
+        </field>
+    </record>
+
+
+    <!--VISTA SEARCH-->
+    <record id="view_helpdesk_ticket_search" model="ir.ui.view"> 
+        <field name="name">view.helpdesk_ticket.search</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="arch" type="xml">
+            <search string="Ticket">
+                <!-- filtrar por nombre y por usuario asignado -->
+                <field name="name" />               <!--MANERA 1 de meter filters (EN EL TEXTBOX)-->
+                <field name="user_id" />
+
+                <!-- filtrar tickets asignados. ES OBLIGATORIO METERLE EL NAME A TODOS, SI NO, DA FALLO-->
+                <!--Cuidado, en un dominio no puede haber campos calculados, por lo que tenemos que buscar una alternativa al assigned-->
+                <filter string="Assigned" name="assigned_to" domain="[('user_id', '!=', False)]" />  <!--MANERA 2: Saldrán en el desplegable de "Filtros"-->
+                
+                <!-- filtrar tickets sin date_limit  -->
+                <filter string="No date limit" name="date_limit" domain="[('date_limit', '!=',False)]" />  <!--CUMPLE CONDICION/FILTROS-->
+
+                <!-- agrupar por date_limit -->
+                <filter string="Date Limit" name="date_limit" context="{'group_by':'date_limit'}" />  <!--AGRUPAR POR-->
+
+                <!-- agrupar por usuario asignado -->
+                <filter string="Assigned to" name="group_user_id" context="{'group_by':'user_id'}" />
+            </search>
+        </field>
+    </record>
+
+    <!--VISTA PIVOT (estilo Excel)-->
+    <record id="view_helpdesk_ticket_pivot" model="ir.ui.view">
+        <field name="name">view.helpdesk_ticket.pivot</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="arch" type="xml">
+
+            <pivot string="Ticket">     <!--Para que se vea es necesario meterlo en helpdesk_menu->view_mode, al igual que con tree y form-->
+                <field name="user_id" type="row" />
+                <field name="date" interval="month" type="col" />
+                <field name="time" type="measure" widget="float_time" /> <!--time es float pero con el widget lo transforma a tiempo: ej: 6,5 -> 6:30 -->
+            </pivot>
+
+        </field>
+    </record>
+
+    <!--VISTA GRAPH-->
+    <record id="view_helpdesk_ticket_graph" model="ir.ui.view">
+        <field name="name">view.helpdesk_ticket.graph</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="arch" type="xml">
+            <graph string="Ticket">
+                <field name="user_id" />
+                <field name="time" type="measure" widget="float_time" />
+            </graph>
+    
+        </field>
+    </record>
+
+    <!--VISTA CALENDAR-->
+    <record id="view_helpdesk_ticket_calendar" model="ir.ui.view">
+        <field name="name">view.helpdesk_ticket.calendar</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="arch" type="xml">
+            
+            <calendar string="Tickets" date_start="date" color="user_id" hide_time="true" event_limit="5">
+                <field name="user_id" avatar_field="image_128" /> 
+                <field name="name" />
+                <field name="user_id" filters="1" invisible="1" />
+            </calendar>
+        </field>
+    </record>
+
+    <!--VISTA KANBAN--> <!--Basicamente veremos un kanban ya hecho e iremos cogiendo lo que necesitemos-->
+    <record id="view_helpdesk_ticket_kanban" model="ir.ui.view">
+        <field name="name">view.helpdesk_ticket.kanban</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="arch" type="xml">
+
+            <kanban default_group_by="user_id"> <!--Importante group by-->
+                
+                <field name="activity_ids" />    <!--MIXIN EN KANBAN-->
+                <field name="activity_state"/> 
+
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_content oe_kanban_global_click"> <!--Importante oe_kanban_global_click para que nos lleve al ticket al hacer click-->
+                            <div class="o_kanban_record_title">
+                                <strong>
+                                    <field name="name" />
+                                </strong>
+                            </div>
+                            <div class="o_kanban_record_subtitle">
+                                <field name="date" />
+                                <field name="time" />
+                            </div>
+                            <div class="oe_kanban_bottom_left">             <!--MIXIN EN KANBAN-->
+                                <div class="o_kanban_inline_block">
+                                    <field name="activity_ids" widget="kanban_activity" />
+                                </div>
+                            </div>
+                            <div class="o_kanban_record_bottom">
+                                <div class="oe_kanban_bottom_right">
+                                    <field name="user_id" widget="many2one_avatar_user" />
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+
+        </field>
+    </record>
+    
+
+    <record id="helpdesk_ticket_action" model="ir.actions.act_window">
+        <field name="name">Tickets</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">helpdesk.ticket</field>
+        <field name="view_mode">tree,kanban,calendar,pivot,graph,form</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new ticket
+            </p>
+        </field>
+    </record>
+
+        <menuitem id="helpdesk_ticket_menu_action" name="Tickets" sequence="10" parent="helpdesk_menu_submenu"
+                  action="helpdesk_ticket_action" />
+        
+        
+        
+        <record id="action_report_helpdesk_ticket" model="ir.actions.report">         <!--ACCION QUE LLAMA PARA CREAR EL INFORME (REPORT)-->
+            <field name="name">Ticket Report</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">helpdesk_raul.report_helpdesk_ticket</field>
+            <field name="report_file">helpdesk_raul.report_helpdesk_ticket</field>
+            <field name="print_report_name">'Ticket - %s' % (object.name)</field>
+            <field name="binding_model_id" ref="model_helpdesk_ticket" />
+            <field name="binding_type">report</field>
+        </record>
+
+        <record id="action_report_partner_helpdesk" model="ir.actions.report">        <!--ACCION QUE LLAMA PARA CREAR EL PAPERFORMAT (REPORT)-->                                          
+            <field name="name">Helpdesk Partner ID</field>
+            <field name="model">res.partner</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">helpdesk_raul.report_partner_helpdesk</field>
+            <field name="report_file">helpdesk_raul.report_partner_helpdesk</field>
+            <field name="print_report_name">'ID/ - %s' % (object.name)</field>
+            <field name="paperformat_id" ref="helpdesk_raul.paperformat_helpdesk"/>
+            <field name="binding_model_id" ref="base.model_res_partner" />
+            <field name="binding_type">report</field>
+        </record>
+    
+</odoo>
