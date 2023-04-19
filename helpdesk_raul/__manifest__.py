@@ -9,8 +9,8 @@
         "mail",
     ],
     "data": [
-        #"data/delete_tag_cron.xml", Da fallo ya que se ha toqueteado las acciones de servidor y no se han guardado
-        "security/helpdesk_security.xml",   #PRIORIZA POR EL ORDEN
+        "data/delete_tag_cron.xml",
+        "security/helpdesk_security.xml",   #PRIORIZA POR EL ORDEN (tener cuidado con las que usan a otras, ya que habria que cargar las que usa antes de la propia)
         "security/ir.model.access.csv",
         "report/helpdesk_ticket_report_templates.xml",
         "report/res_partner_templates.xml",
